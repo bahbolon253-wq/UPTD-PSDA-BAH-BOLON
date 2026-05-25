@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Informasi Terpadu UPTD PSDA Bah Bolon",
+  "description": "Sistem informasi terpadu untuk UPTD Pengelolaan Sumber Daya Air Bah Bolon, memfasilitasi administrasi Tata Usaha, seksi Operasi & Pemeliharaan (O&P), seksi Pembangunan, dan manajemen kinerja.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

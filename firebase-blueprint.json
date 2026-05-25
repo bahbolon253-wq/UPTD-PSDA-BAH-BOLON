@@ -1,0 +1,210 @@
+{
+  "entities": {
+    "Profil": {
+      "title": "Profil Kantor",
+      "description": "Informasi profil UPTD PSDA Bah Bolon",
+      "type": "object",
+      "properties": {
+        "namaKantor": { "type": "string" },
+        "singkatan": { "type": "string" },
+        "alamat": { "type": "string" },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "kepalaUptd": { "type": "string" },
+        "nipKepalaUptd": { "type": "string" },
+        "golonganKepalaUptd": { "type": "string" },
+        "petaKoordinat": { "type": "string" }
+      },
+      "required": ["namaKantor", "singkatan", "alamat", "telepon", "email", "kepalaUptd", "nipKepalaUptd", "golonganKepalaUptd", "petaKoordinat"]
+    },
+    "SuratMasuk": {
+      "title": "Surat Masuk",
+      "description": "Pencatatan data surat masuk",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nomorSurat": { "type": "string" },
+        "tanggalSurat": { "type": "string" },
+        "tanggalTerima": { "type": "string" },
+        "pengirim": { "type": "string" },
+        "perihal": { "type": "string" },
+        "sifat": { "type": "string", "enum": ["Biasa", "Penting", "Rahasia"] },
+        "disposisiKepala": { "type": "string" },
+        "status": { "type": "string", "enum": ["Baru", "Didisposisikan", "Selesai"] }
+      },
+      "required": ["id", "nomorSurat", "tanggalSurat", "tanggalTerima", "pengirim", "perihal", "sifat", "status"]
+    },
+    "SuratKeluar": {
+      "title": "Surat Keluar",
+      "description": "Pencatatan data surat keluar",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nomorSurat": { "type": "string" },
+        "tanggalSurat": { "type": "string" },
+        "penerima": { "type": "string" },
+        "perihal": { "type": "string" },
+        "seksiAsal": { "type": "string", "enum": ["Tata Usaha", "Seksi O&P", "Seksi Pembangunan"] },
+        "status": { "type": "string", "enum": ["Draf", "Diajukan", "Ditandatangani", "Dikirim"] }
+      },
+      "required": ["id", "nomorSurat", "tanggalSurat", "penerima", "perihal", "seksiAsal", "status"]
+    },
+    "Pegawai": {
+      "title": "Pegawai",
+      "description": "Data Kepegawaian",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "nip": { "type": "string" },
+        "jabatan": { "type": "string" },
+        "golongan": { "type": "string" },
+        "statusKepegawaian": { "type": "string", "enum": ["PNS", "PPPK", "Honorer", "Tenaga Kontrak O&P"] },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "fotoUrl": { "type": "string" },
+        "tempatLahir": { "type": "string" },
+        "tanggalLahir": { "type": "string" },
+        "jenisKelamin": { "type": "string", "enum": ["Laki-laki", "Perempuan"] },
+        "agama": { "type": "string" },
+        "statusPerkawinan": { "type": "string" },
+        "alamat": { "type": "string" },
+        "riwayatPendidikan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "jenjang": { "type": "string" },
+              "namaSekolah": { "type": "string" },
+              "alamatSekolah": { "type": "string" },
+              "tahunLulus": { "type": "string" }
+            },
+            "required": ["jenjang", "namaSekolah", "alamatSekolah", "tahunLulus"]
+          }
+        },
+        "riwayatKepegawaianDetail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skPangkat": { "type": "string" },
+              "tanggalSkPangkat": { "type": "string" },
+              "skGajiBerkala": { "type": "string" },
+              "tanggalSkGajiBerkala": { "type": "string" }
+            },
+            "required": ["skPangkat", "tanggalSkPangkat", "skGajiBerkala", "tanggalSkGajiBerkala"]
+          }
+        }
+      },
+      "required": ["id", "nama", "nip", "jabatan", "golongan", "statusKepegawaian", "telepon", "email"]
+    },
+    "TransaksiKeuangan": {
+      "title": "Transaksi Keuangan",
+      "description": "Data transaksi penerimaan dan pengeluaran",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "jumlah": { "type": "number" },
+        "tipe": { "type": "string", "enum": ["Pemasukan", "Pengeluaran"] },
+        "kategori": { "type": "string", "enum": ["Belanja Pegawai", "Belanja Barang", "Belanja Modal", "Pemeliharaan Irigasi", "Dana Darurat", "Lain-lain"] },
+        "nomorSPDOrSPM": { "type": "string" }
+      },
+      "required": ["id", "tanggal", "keterangan", "jumlah", "tipe", "kategori", "nomorSPDOrSPM"]
+    },
+    "Aset": {
+      "title": "Aset",
+      "description": "Pencatatan aset kantor",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kodeAset": { "type": "string" },
+        "namaAset": { "type": "string" },
+        "kategori": { "type": "string", "enum": ["KIB A - Tanah", "KIB B - Peralatan dan Mesin", "KIB C - Gedung dan Bangunan", "KIB D - Jalan, Irigasi, dan Jaringan", "KIB E - Aset Tetap Lainnya", "KIB F - Konstruksi dalam Pengerjaan"] },
+        "jumlah": { "type": "number" },
+        "satuan": { "type": "string" },
+        "kondisi": { "type": "string", "enum": ["Baik", "Rusak Ringan", "Rusak Berat"] },
+        "lokasiPenyimpanan": { "type": "string" }
+      },
+      "required": ["id", "kodeAset", "namaAset", "kategori", "jumlah", "satuan", "kondisi", "lokasiPenyimpanan"]
+    },
+    "DaerahIrigasi": {
+      "title": "Daerah Irigasi",
+      "description": "Data Daerah Irigasi Seksi O&P",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "luasFungsionalHa": { "type": "number" },
+        "luasRencanaHa": { "type": "number" },
+        "kabupatenKota": { "type": "string" },
+        "kecamatan": { "type": "string" },
+        "panjangSaluranPrimerM": { "type": "number" },
+        "panjangSaluranSekunderM: ": { "type": "number" },
+        "jumlahBendung": { "type": "number" },
+        "jumlahBangunanBagiSadap": { "type": "number" },
+        "kondisiSaluranPct": { "type": "number" },
+        "statusKewenangan": { "type": "string", "enum": ["Provinsi", "Pusat", "Kabupaten"] },
+        "keteranganOP": { "type": "string" }
+      },
+      "required": ["id", "nama", "luasFungsionalHa", "luasRencanaHa", "kabupatenKota", "kecamatan", "statusKewenangan", "keteranganOP"]
+    },
+    "KegiatanPembangunan": {
+      "title": "Kegiatan Pembangunan",
+      "description": "Data Pembangunan & Rehabilitasi Seksi Pembangunan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "namaKegiatan": { "type": "string" },
+        "lokasi": { "type": "string" },
+        "tahunAnggaran": { "type": "number" },
+        "paguAnggaran": { "type": "number" },
+        "nilaiKontrak": { "type": "number" },
+        "kontraktor": { "type": "string" },
+        "noKontrak": { "type": "string" },
+        "progresFisikPct": { "type": "number" },
+        "progresKeuanganPct": { "type": "number" },
+        "tanggalMulai": { "type": "string" },
+        "tanggalSelesai": { "type": "string" },
+        "status": { "type": "string", "enum": ["Persiapan", "Konstruksi", "Show Cause Meeting", "Selesai", "Masa Pemeliharaan"] },
+        "kendalaAtauCatatan": { "type": "string" }
+      },
+      "required": ["id", "namaKegiatan", "lokasi", "tahunAnggaran", "paguAnggaran", "nilaiKontrak", "kontraktor", "noKontrak", "progresFisikPct", "progresKeuanganPct", "tanggalMulai", "tanggalSelesai", "status", "kendalaAtauCatatan"]
+    }
+  },
+  "firestore": {
+    "/profil/kantor": {
+      "schema": { "$ref": "#/entities/Profil" },
+      "description": "Informasi koordinat & kontak kantor"
+    },
+    "/surat-masuk/{id}": {
+      "schema": { "$ref": "#/entities/SuratMasuk" },
+      "description": "Koleksi data surat masuk"
+    },
+    "/surat-keluar/{id}": {
+      "schema": { "$ref": "#/entities/SuratKeluar" },
+      "description": "Koleksi draf dan surat keluar"
+    },
+    "/pegawai/{id}": {
+      "schema": { "$ref": "#/entities/Pegawai" },
+      "description": "Koleksi data pegawai ASN & non-ASN"
+    },
+    "/keuangan/{id}": {
+      "schema": { "$ref": "#/entities/TransaksiKeuangan" },
+      "description": "Koleksi data realisasi keuangan"
+    },
+    "/aset/{id}": {
+      "schema": { "$ref": "#/entities/Aset" },
+      "description": "Koleksi pencatatan inventaris aset kantor"
+    },
+    "/daerah-irigasi/{id}": {
+      "schema": { "$ref": "#/entities/DaerahIrigasi" },
+      "description": "Koleksi daerah irigasi selaian O&P"
+    },
+    "/pembangunan/{id}": {
+      "schema": { "$ref": "#/entities/KegiatanPembangunan" },
+      "description": "Koleksi data proyek pembangunan fisik"
+    }
+  }
+}
