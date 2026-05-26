@@ -152,7 +152,7 @@
     },
     "KegiatanPembangunan": {
       "title": "Kegiatan Pembangunan",
-      "description": "Data Pembangunan & Rehabilitasi Seksi Pembangunan",
+      "description": "Data Pembangunan & Rehabilitasi Seksi Pembangunan Infrastruktur SDA",
       "type": "object",
       "properties": {
         "id": { "type": "string" },

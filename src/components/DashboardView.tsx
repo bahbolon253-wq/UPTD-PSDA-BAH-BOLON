@@ -258,7 +258,7 @@ export default function DashboardView({
             <div>
               <h3 className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
                 <Building className="w-4.5 h-4.5 text-teal-600" />
-                Alokasi Pagu Pekerjaan Seksi Pembangunan
+                Alokasi Pagu Pekerjaan Seksi Pembangunan Infrastruktur SDA
               </h3>
               <p className="text-xs text-gray-500">Nilai Pagu Anggaran vs Nilai Kontrak Pelaksana (dalam Juta Rupiah)</p>
             </div>

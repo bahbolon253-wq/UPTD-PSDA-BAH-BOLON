@@ -11,7 +11,8 @@ import {
   Aset,
   DaerahIrigasi,
   KegiatanPembangunan,
-  ProfilKantor
+  ProfilKantor,
+  AkunPengguna
 } from './types';
 
 export const initialProfil: ProfilKantor = {
@@ -207,7 +208,7 @@ export const initialPegawai: Pegawai[] = [
     id: 'PEG-004',
     nama: 'Hendry Saragih, S.T.',
     nip: '19850920 201101 1 005',
-    jabatan: 'Kepala Seksi Pembangunan & Rehabilitasi',
+    jabatan: 'Kepala Seksi Pembangunan Infrastruktur SDA',
     golongan: 'Penata (III/c)',
     statusKepegawaian: 'PNS',
     telepon: '0852-9600-4567',
@@ -485,6 +486,32 @@ export const initialDaerahIrigasi: DaerahIrigasi[] = [
   {
     id: 'DI-001',
     nama: 'D.I. Bah Bolon',
+    kodeRegistrasi: 'REG-BB-001',
+    luasArealHa: 6511,
+    sumberAir: 'Sungai Bah Bolon',
+    lokasi: 'Kec. Tanah Jawa, Kab. Simalungun',
+    kondisi: 82,
+    kewenangan: 'Provinsi',
+    bangunanPendukung: [
+      {
+        id: 'BP-101',
+        nama: 'Aparatur Pintu Intake Primer',
+        kategori: 'Pintu Intake',
+        kondisiFisik: 'Baik',
+        keterangan: 'Pintu intake utama lancar tidak macet',
+        koordinat: '02°55\'14" N, 99°06\'12" E',
+        fotoUrl: ''
+      },
+      {
+        id: 'BP-102',
+        nama: 'Mercu Bendung Bah Bolon',
+        kategori: 'Mercu Bendung',
+        kondisiFisik: 'Rusak Ringan',
+        keterangan: 'Ada retak rambut di dinding mercu kiri',
+        koordinat: '02°55\'15" N, 99°06\'10" E',
+        fotoUrl: ''
+      }
+    ],
     luasFungsionalHa: 6511,
     luasRencanaHa: 7300,
     kabupatenKota: 'Simalungun',
@@ -500,6 +527,23 @@ export const initialDaerahIrigasi: DaerahIrigasi[] = [
   {
     id: 'DI-002',
     nama: 'D.I. Kerasaan',
+    kodeRegistrasi: 'REG-KR-002',
+    luasArealHa: 4850,
+    sumberAir: 'Sungai Kerasaan',
+    lokasi: 'Kec. Bandar, Kab. Simalungun',
+    kondisi: 74,
+    kewenangan: 'Provinsi',
+    bangunanPendukung: [
+      {
+        id: 'BP-201',
+        nama: 'Pintu Air Sekunder B5',
+        kategori: 'Pintu Air Sekunder',
+        kondisiFisik: 'Baik',
+        keterangan: 'Pelumas pintu lancar digunakan',
+        koordinat: '03°01\'22" N, 99°14\'54" E',
+        fotoUrl: ''
+      }
+    ],
     luasFungsionalHa: 4850,
     luasRencanaHa: 5000,
     kabupatenKota: 'Simalungun',
@@ -515,6 +559,13 @@ export const initialDaerahIrigasi: DaerahIrigasi[] = [
   {
     id: 'DI-003',
     nama: 'D.I. Raya',
+    kodeRegistrasi: 'REG-RY-003',
+    luasArealHa: 1240,
+    sumberAir: 'Sungai Raya',
+    lokasi: 'Kec. Raya, Kab. Simalungun',
+    kondisi: 90,
+    kewenangan: 'Provinsi',
+    bangunanPendukung: [],
     luasFungsionalHa: 1240,
     luasRencanaHa: 1500,
     kabupatenKota: 'Simalungun',
@@ -530,6 +581,13 @@ export const initialDaerahIrigasi: DaerahIrigasi[] = [
   {
     id: 'DI-004',
     nama: 'D.I. Bandar',
+    kodeRegistrasi: 'REG-BD-004',
+    luasArealHa: 2280,
+    sumberAir: 'Sungai Silau',
+    lokasi: 'Kec. Bandar, Kab. Simalungun',
+    kondisi: 68,
+    kewenangan: 'Provinsi',
+    bangunanPendukung: [],
     luasFungsionalHa: 2280,
     luasRencanaHa: 2500,
     kabupatenKota: 'Simalungun',
@@ -545,6 +603,13 @@ export const initialDaerahIrigasi: DaerahIrigasi[] = [
   {
     id: 'DI-005',
     nama: 'D.I. Silau',
+    kodeRegistrasi: 'REG-SL-005',
+    luasArealHa: 1890,
+    sumberAir: 'Sungai Silau Kiri',
+    lokasi: 'Kec. Bosar Maligas, Kab. Simalungun',
+    kondisi: 62,
+    kewenangan: 'Provinsi',
+    bangunanPendukung: [],
     luasFungsionalHa: 1890,
     luasRencanaHa: 2000,
     kabupatenKota: 'Asahan / Simalungun',
@@ -625,3 +690,140 @@ export const initialPembangunan: KegiatanPembangunan[] = [
     kendalaAtauCatatan: 'Pemasangan kistdam pintu darurat pembendung dan koordinasi penutupan sementara aliran air.'
   }
 ];
+
+export const initialAkuns: AkunPengguna[] = [
+  {
+    id: "u-1",
+    role: "super_admin",
+    roleName: "Super Admin",
+    username: "super.admin",
+    sandu: "SDA_Super2026",
+    canInput: true,
+    colorClass: "bg-purple-100 text-purple-700 border-purple-200",
+    allowedModules: ["Semua Modul", "Sekretariat", "Kepegawaian", "Keuangan", "Aset", "O&P Lapangan"]
+  },
+  {
+    id: "u-2",
+    role: "admin_tu",
+    roleName: "Admin TU",
+    username: "tu.simalungun",
+    sandu: "SDA_TU2026",
+    canInput: true,
+    colorClass: "bg-blue-100 text-blue-700 border-blue-200",
+    allowedModules: ["Arsip Surat Masuk/Keluar", "Memo Disposisi Sekretaris"]
+  },
+  {
+    id: "u-3",
+    role: "admin_pegawai",
+    roleName: "Admin Pegawai",
+    username: "pegawai.sda",
+    sandu: "SDA_Pegawai2026",
+    canInput: true,
+    colorClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    allowedModules: ["Database Kepegawaian", "Daftar Riwayat Kerja", "KGB/Kenaikan Pangkat"]
+  },
+  {
+    id: "u-4",
+    role: "admin_uang",
+    roleName: "Admin Uang",
+    username: "keuangan.sda",
+    sandu: "SDA_Uang2026",
+    canInput: true,
+    colorClass: "bg-amber-100 text-amber-800 border-amber-200",
+    allowedModules: ["Pemasukan & Pengeluaran", "Cetak Laporan Keuangan"]
+  },
+  {
+    id: "u-5",
+    role: "admin_aset",
+    roleName: "Admin Aset",
+    username: "aset.sda",
+    sandu: "SDA_Aset2026",
+    canInput: true,
+    colorClass: "bg-orange-100 text-orange-850 border-orange-200",
+    allowedModules: ["Katalog Aset KIB A-F", "Inventaris Peralatan & Mesin"]
+  },
+  {
+    id: "u-6",
+    role: "surveyor",
+    roleName: "Surveyor OP",
+    username: "surveyor.sda",
+    sandu: "SDA_Survey2026",
+    canInput: true,
+    colorClass: "bg-teal-100 text-teal-850 border-teal-200",
+    allowedModules: ["Pencatatan D.I.", "Data Kondisi Bangunan Pendukung"]
+  }
+];
+
+export const initialSungai = [
+  {
+    id: "S-01",
+    nama: "Sungai Bah Bolon",
+    panjangKm: 120,
+    luasDasKm2: 950,
+    debitRerataM3s: 24.5,
+    statusAliran: "Normal",
+    lokasiSeksi: "Kec. Siantar, Kec. Tanah Jawa, Kec. Bosar Maligas",
+    koordinatHulu: "2°54'12\" N, 98°51'30\" E",
+    koordinatHilir: "3°08'45\" N, 99°18'22\" E",
+    jumlahPintuAir: 14,
+    kondisiTanggul: "Baik",
+    keterangan: "Sumber air utama untuk Daerah Irigasi Bah Bolon Raya. Aliran stabil sepanjang tahun."
+  },
+  {
+    id: "S-02",
+    nama: "Sungai Bah Tongguran",
+    panjangKm: 42,
+    luasDasKm2: 240,
+    debitRerataM3s: 8.2,
+    statusAliran: "Normal",
+    lokasiSeksi: "Kec. Dolok Panribuan, Kec. Jorlang Hataran",
+    koordinatHulu: "2°48'05\" N, 98°58'12\" E",
+    koordinatHilir: "2°55'40\" N, 99°04'55\" E",
+    jumlahPintuAir: 4,
+    kondisiTanggul: "Cukup",
+    keterangan: "Memiliki fluktuasi debit yang tinggi pada musim hujan. Mengairi D.I. Bah Tongguran."
+  },
+  {
+    id: "S-03",
+    nama: "Sungai Bah Kasijan",
+    panjangKm: 35,
+    luasDasKm2: 180,
+    debitRerataM3s: 5.6,
+    statusAliran: "Kering",
+    lokasiSeksi: "Kec. Panei, Kec. Sidamanik",
+    koordinatHulu: "2°51'20\" N, 98°54'03\" E",
+    koordinatHilir: "2°57'11\" N, 98°59'40\" E",
+    jumlahPintuAir: 2,
+    kondisiTanggul: "Baik",
+    keterangan: "Debit air saat ini turun signifikan akibat kemarau di wilayah tangkapan air hulu."
+  },
+  {
+    id: "S-04",
+    nama: "Sungai Bah Hapal",
+    panjangKm: 28,
+    luasDasKm2: 125,
+    debitRerataM3s: 4.1,
+    statusAliran: "Normal",
+    lokasiSeksi: "Kec. Raya Kahean, Kec. Tapian Dolok",
+    koordinatHulu: "3°04'15\" N, 99°01'44\" E",
+    koordinatHilir: "3°09'22\" N, 99°06'50\" E",
+    jumlahPintuAir: 3,
+    kondisiTanggul: "Kritis",
+    keterangan: "Membutuhkan normalisasi sepanjang 2 Km di titik rawan longsor Kecamatan Tapian Dolok."
+  },
+  {
+    id: "S-05",
+    nama: "Sungai Bah Kare",
+    panjangKm: 18,
+    luasDasKm2: 85,
+    debitRerataM3s: 3.2,
+    statusAliran: "Siaga",
+    lokasiSeksi: "Kec. Dolok Pardamean",
+    koordinatHulu: "2°45'10\" N, 98°48'50\" E",
+    koordinatHilir: "2°49'33\" N, 98°52'10\" E",
+    jumlahPintuAir: 1,
+    kondisiTanggul: "Sangat Baik",
+    keterangan: "Aliran terpantau keruh dengan peningkatan tinggi muka air (TMA) akibat hujan deras semalam."
+  }
+];
+

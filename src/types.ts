@@ -80,9 +80,28 @@ export interface Aset {
   lokasiPenyimpanan: string;
 }
 
+export interface BangunanPendukung {
+  id: string;
+  nama: string;
+  kategori: string;
+  kondisiFisik: string;
+  keterangan: string;
+  koordinat: string;
+  fotoUrl?: string;
+}
+
 export interface DaerahIrigasi {
   id: string;
   nama: string;
+  kodeRegistrasi: string;
+  luasArealHa: number;
+  sumberAir: string;
+  lokasi: string;
+  kondisi: number; // percentage representation for progress / status e.g. 85
+  kewenangan: 'Provinsi' | 'Pusat' | 'Kabupaten' | string;
+  bangunanPendukung?: BangunanPendukung[];
+
+  // Compatibility fields for existing calculations / charts
   luasFungsionalHa: number; // in Hectares
   luasRencanaHa: number;
   kabupatenKota: string;
@@ -124,3 +143,30 @@ export interface ProfilKantor {
   golonganKepalaUptd: string;
   petaKoordinat: string;
 }
+
+export interface AkunPengguna {
+  id: string;
+  role: string; // 'super_admin' | 'admin_tu' | 'admin_pegawai' | 'admin_uang' | 'admin_aset' | 'surveyor'
+  roleName: string;
+  username: string;
+  sandu: string; // password
+  canInput: boolean;
+  colorClass: string;
+  allowedModules: string[];
+}
+
+export interface Sungai {
+  id: string;
+  nama: string;
+  panjangKm: number;
+  luasDasKm2: number;
+  debitRerataM3s: number;
+  statusAliran: 'Normal' | 'Siaga' | 'Banjir' | 'Kering' | string;
+  lokasiSeksi: string;
+  koordinatHulu: string;
+  koordinatHilir: string;
+  jumlahPintuAir: number;
+  kondisiTanggul: 'Sangat Baik' | 'Baik' | 'Cukup' | 'Kritis' | string;
+  keterangan: string;
+}
+

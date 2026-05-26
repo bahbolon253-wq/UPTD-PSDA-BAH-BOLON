@@ -8,52 +8,58 @@ service cloud.firestore {
     }
 
     // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    match /akun-pengguna/{id} {
+      allow read: if true;
+      allow write: if isValidId(id);
+    }
+
     match /profil/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(docId);
+      allow read: if true;
+      allow write: if isValidId(docId);
     }
     
     match /surat-masuk/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /surat-keluar/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /pegawai/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /keuangan/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /aset/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /daerah-irigasi/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
+    }
+    
+    match /sungai/{id} {
+      allow read: if true;
+      allow write: if isValidId(id);
     }
     
     match /pembangunan/{id} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(id);
+      allow read: if true;
+      allow write: if isValidId(id);
     }
   }
 }

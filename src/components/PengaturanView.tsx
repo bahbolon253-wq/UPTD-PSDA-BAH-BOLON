@@ -18,9 +18,29 @@ import {
   Check, 
   Sparkles,
   Database,
-  Link2
+  Link2,
+  Lock,
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  UserCheck,
+  Edit2,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { ProfilKantor, Pegawai } from '../types';
+
+interface AkunPengguna {
+  id: string;
+  role: string;
+  roleName: string;
+  username: string;
+  sandu: string; // password
+  canInput: boolean;
+  colorClass: string;
+  allowedModules: string[];
+}
 
 interface PengaturanViewProps {
   profil: ProfilKantor;
@@ -31,6 +51,10 @@ interface PengaturanViewProps {
   onChangeTheme: (theme: string) => void;
   onImportBackupData: (jsonStr: string) => boolean;
   onExportBackupData: () => void;
+  akuns: AkunPengguna[];
+  onAddAkun: (newAcc: AkunPengguna) => Promise<void>;
+  onEditAkun: (updatedAcc: AkunPengguna) => Promise<void>;
+  onDeleteAkun: (id: string) => Promise<void>;
 }
 
 export default function PengaturanView({
@@ -41,7 +65,11 @@ export default function PengaturanView({
   activeTheme,
   onChangeTheme,
   onImportBackupData,
-  onExportBackupData
+  onExportBackupData,
+  akuns = [],
+  onAddAkun,
+  onEditAkun,
+  onDeleteAkun
 }: PengaturanViewProps) {
   
   // Local state for profile form
@@ -50,6 +78,10 @@ export default function PengaturanView({
   const [resetCompleted, setResetCompleted] = useState(false);
   const [importCompleted, setImportCompleted] = useState(false);
   const [importError, setImportError] = useState(false);
+
+  const [editingAkun, setEditingAkun] = useState<AkunPengguna | null>(null);
+  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     setFormData({ ...profil });
@@ -435,8 +467,355 @@ export default function PengaturanView({
           </div>
 
         </div>
-
       </div>
+
+            {/* SECTION: AKUN PENGGUNA & KEWENANGAN INPUT DATA */}
+      <div className="bg-white rounded-xl border border-gray-150 shadow-sm p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-150 pb-4">
+          <div className="space-y-1">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <Shield className="w-5 h-5 text-indigo-600" />
+              Kredensial & Hak Akses Penginputan Data (Multi-Role Admin)
+            </h3>
+            <p className="text-xs text-gray-500">
+              Setiap penugasan admin memiliki wewenang menginput/mengubah data sektoral menurut peran tanggung jawab masing-masing.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-150 rounded-full font-black px-3 py-1 uppercase select-none font-mono">
+              {akuns.length} Peran Aktif
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Daftar Akun</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Informative Help Box */}
+        <div className="bg-indigo-50/40 p-3 rounded-lg border border-indigo-150/50 text-[11px] text-indigo-900 flex gap-2">
+          <UserCheck className="w-4 h-4 shrink-0 mt-0.5 text-indigo-600" />
+          <span>Hubungi bidang Kepegawaian & Tata Usaha atau gunakan tombol di atas untuk mendaftarkan personil admin tambahan di luar unit UPTD Bah Bolon. Anda juga dapat menonaktifkan izin input atau memodifikasi kredensial kapan saja.</span>
+        </div>
+
+        {/* Accounts Table Mode */}
+        <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-xs">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                <th className="py-3 px-4">Peran Sektoral</th>
+                <th className="py-3 px-4">Nama Pengguna (Username)</th>
+                <th className="py-3 px-4">Kata Sandi (Password)</th>
+                <th className="py-3 px-4 hidden lg:table-cell">Modul Yang Diizinkan</th>
+                <th className="py-3 px-4 text-center">Status Izin Input</th>
+                <th className="py-3 px-4 text-right">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-150">
+              {akuns.map((acc) => {
+                const isPassVisible = !!showPasswordMap[acc.id];
+                return (
+                  <tr key={acc.id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className={`text-[10px] font-black uppercase font-mono px-2.5 py-1 rounded-full border ${acc.colorClass}`}>
+                        {acc.roleName}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-gray-800 select-all">
+                      {acc.username}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5 font-mono">
+                        <span className="text-gray-800 text-[11px] select-all font-bold">
+                          {isPassVisible ? acc.sandu : '••••••••'}
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => setShowPasswordMap(prev => ({ ...prev, [acc.id]: !prev[acc.id] }))}
+                          className="p-1 hover:bg-gray-200 text-gray-500 rounded-md focus:outline-none transition-colors"
+                          title={isPassVisible ? 'Sembunyikan' : 'Tampilkan'}
+                        >
+                          {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1 max-w-sm">
+                        {acc.allowedModules.map((mod, mIdx) => (
+                          <span key={mIdx} className="bg-gray-100 text-gray-650 px-1.5 py-0.5 rounded text-[10px] font-medium border border-gray-150/40">
+                            {mod}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onEditAkun({ ...acc, canInput: !acc.canInput });
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                          acc.canInput 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                        }`}
+                      >
+                        <div className={`w-1.5 h-1.5 rounded-full ${acc.canInput ? 'bg-emerald-600 animate-pulse' : 'bg-rose-600'}`}></div>
+                        <span>{acc.canInput ? 'Bisa Input Data' : 'Hanya Lihat'}</span>
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingAkun(acc)}
+                          className="p-1.5 text-teal-600 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-colors border border-transparent hover:border-teal-150"
+                          title="Ubah Akses/Sandi"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        {acc.role !== 'super_admin' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Hapus kredensial akses untuk pengguna "${acc.username}" (${acc.roleName})?`)) {
+                                onDeleteAkun(acc.id);
+                              }
+                            }}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors border border-transparent hover:border-rose-150"
+                            title="Hapus Akun"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* POPUP MODAL: TAMBAH AKUN BARU (KECUALI SUPER ADMIN) */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-indigo-750 p-4 text-white flex justify-between items-center">
+              <h3 className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Shield className="w-4 h-4" /> Daftarkan Admin Sektoral Baru
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-white hover:text-indigo-200 font-bold text-lg px-1 focus:outline-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const roleKey = (form.elements.namedItem('roleSelect') as HTMLSelectElement).value;
+                const userVal = (form.elements.namedItem('username') as HTMLInputElement).value.trim();
+                const passVal = (form.elements.namedItem('password') as HTMLInputElement).value.trim();
+                
+                if (!userVal || !passVal) {
+                  alert('Username dan password tidak boleh kosong!');
+                  return;
+                }
+
+                // Check for duplicate username
+                if (akuns.some(acc => acc.username.toLowerCase() === userVal.toLowerCase())) {
+                  alert(`Username "${userVal}" sudah terpakai. Silakan gunakan nama pengguna yang berbeda.`);
+                  return;
+                }
+
+                // Mappings setup
+                const colorMap: Record<string, string> = {
+                  admin_tu: "bg-blue-100 text-blue-700 border-blue-200",
+                  admin_pegawai: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                  admin_uang: "bg-amber-100 text-amber-800 border-amber-200",
+                  admin_aset: "bg-orange-100 text-orange-850 border-orange-200",
+                  surveyor: "bg-teal-100 text-teal-850 border-teal-200"
+                };
+
+                const nameMap: Record<string, string> = {
+                  admin_tu: "Admin TU",
+                  admin_pegawai: "Admin Pegawai",
+                  admin_uang: "Admin Uang",
+                  admin_aset: "Admin Aset",
+                  surveyor: "Surveyor OP"
+                };
+
+                const moduleMap: Record<string, string[]> = {
+                  admin_tu: ["Arsip Surat Masuk/Keluar", "Memo Disposisi Sekretaris"],
+                  admin_pegawai: ["Database Kepegawaian", "Daftar Riwayat Kerja", "KGB/Kenaikan Pangkat"],
+                  admin_uang: ["Pemasukan & Pengeluaran", "Cetak Laporan Keuangan"],
+                  admin_aset: ["Katalog Aset KIB A-F", "Inventaris Peralatan & Mesin"],
+                  surveyor: ["Pencatatan D.I.", "Data Kondisi Bangunan Pendukung"]
+                };
+
+                const newAcc: AkunPengguna = {
+                  id: `u-${Date.now()}`,
+                  role: roleKey,
+                  roleName: nameMap[roleKey] || "Sektoral Admin",
+                  username: userVal,
+                  sandu: passVal,
+                  canInput: true,
+                  colorClass: colorMap[roleKey] || "bg-gray-100 text-gray-700 border-gray-200",
+                  allowedModules: moduleMap[roleKey] || ["Spesifik Modul"]
+                };
+
+                onAddAkun(newAcc);
+                setShowAddModal(false);
+              }}
+              className="p-5 space-y-4 text-xs"
+            >
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Bagian / Peran Sektoral</label>
+                <select
+                  name="roleSelect"
+                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold text-gray-800 bg-white"
+                  required
+                >
+                  <option value="admin_tu">Admin TU (Sekretariat / Tata Usaha)</option>
+                  <option value="admin_pegawai">Admin Pegawai (Urusan Kepegawaian)</option>
+                  <option value="admin_uang">Admin Keuangan (Aset / Anggaran)</option>
+                  <option value="admin_aset">Admin Aset (Inventarisasi KIB A-F)</option>
+                  <option value="surveyor">Surveyor OP (Penginputan Daerah Irigasi & Bangunan OP)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Nama Pengguna (Username)</label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="contoh: dicky.tatausaha"
+                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Kata Sandi Default</label>
+                <input
+                  type="text"
+                  name="password"
+                  placeholder="contoh: BahBolon_TU2026"
+                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  required
+                />
+              </div>
+
+              <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-150/45 text-[10px] text-indigo-900">
+                ⭐ <strong>Hak Akses Penginputan:</strong> Secara default, akun baru yang didaftarkan akan langsung diberikan wewenang penuh untuk melakukan penginputan & modifikasi data sesuai dengan bagian masing-masing.
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-gray-500 font-medium hover:bg-gray-50 transition-colors bg-white hover:text-gray-700"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg hover:shadow transition-colors"
+                >
+                  Daftarkan Akun
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP MODAL: EDIT AKUN KREDENSIAL */}
+      {editingAkun && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-gradient-to-r from-teal-600 to-indigo-700 p-4 text-white flex justify-between items-center">
+              <h3 className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Lock className="w-4 h-4" /> Edit Akun {editingAkun.roleName}
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setEditingAkun(null)}
+                className="text-white hover:text-teal-200 font-bold text-lg px-1 focus:outline-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const userVal = (form.elements.namedItem('username') as HTMLInputElement).value;
+                const passVal = (form.elements.namedItem('password') as HTMLInputElement).value;
+                
+                if (!userVal.trim() || !passVal.trim()) {
+                  alert('Username dan Password tidak boleh kosong!');
+                  return;
+                }
+                
+                onEditAkun({ ...editingAkun, username: userVal, sandu: passVal });
+                setEditingAkun(null);
+              }}
+              className="p-5 space-y-4 text-xs bg-white"
+            >
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Nama Pengguna (Username)</label>
+                <input
+                  type="text"
+                  name="username"
+                  defaultValue={editingAkun.username}
+                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-550 uppercase">Kata Sandi Baru</label>
+                <input
+                  type="text"
+                  name="password"
+                  defaultValue={editingAkun.sandu}
+                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingAkun(null)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-gray-500 font-medium hover:bg-gray-50 transition-colors bg-white hover:text-gray-700"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg hover:shadow transition-colors"
+                >
+                  Simpan Kredensial
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

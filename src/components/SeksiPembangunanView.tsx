@@ -175,7 +175,7 @@ export default function SeksiPembangunanView({
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <TrendingUp className="w-7 h-7 text-indigo-600" />
-            Seksi Pembangunan & Rehabilitasi Irigasi
+            Seksi Pembangunan Infrastruktur SDA
           </h1>
           <p className="text-xs text-gray-500">
             Pemantauan fisik, kepekaan keuangan, dokumentasi konstruksi dan pelaporan berkala program infrastruktur

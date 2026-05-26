@@ -24,7 +24,10 @@ import {
   LogIn,
   Lock,
   CloudLightning,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Shield
 } from 'lucide-react';
 
 // Models
@@ -36,7 +39,9 @@ import {
   TransaksiKeuangan, 
   Aset, 
   DaerahIrigasi, 
-  KegiatanPembangunan 
+  KegiatanPembangunan,
+  AkunPengguna,
+  Sungai
 } from './types';
 
 // Mock Data
@@ -48,7 +53,9 @@ import {
   initialKeuangan, 
   initialAset, 
   initialDaerahIrigasi, 
-  initialPembangunan 
+  initialPembangunan,
+  initialAkuns,
+  initialSungai
 } from './mockData';
 
 // Component Views
@@ -101,7 +108,59 @@ export default function App() {
   const [keuangan, setKeuangan] = useState<TransaksiKeuangan[]>(initialKeuangan);
   const [aset, setAset] = useState<Aset[]>(initialAset);
   const [daerahIrigasi, setDaerahIrigasi] = useState<DaerahIrigasi[]>(initialDaerahIrigasi);
+  const [sungai, setSungai] = useState<Sungai[]>(initialSungai);
   const [pembangunan, setPembangunan] = useState<KegiatanPembangunan[]>(initialPembangunan);
+
+  // Administrative User Accounts State based on User request
+  const [akuns, setAkuns] = useState<AkunPengguna[]>(() => {
+    const local = localStorage.getItem('psda_accounts');
+    return local ? JSON.parse(local) : initialAkuns;
+  });
+
+  // Custom multi-role Session state
+  const [sessionUser, setSessionUser] = useState<any>(() => {
+    const local = localStorage.getItem('psda_session_user');
+    return local ? JSON.parse(local) : null;
+  });
+
+  // Local Form states for Login
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Keep accounts local state in sync with localStorage
+  useEffect(() => {
+    localStorage.setItem('psda_accounts', JSON.stringify(akuns));
+  }, [akuns]);
+
+  // Handler functions for managing accounts via child Pengaturan props
+  const handleAddAkun = async (newAcc: AkunPengguna) => {
+    setAkuns(prev => [...prev, newAcc]);
+    try {
+      await setDoc(doc(db, 'akun-pengguna', newAcc.id), newAcc);
+    } catch (err) {
+      console.error("Failed to write to firestore:", err);
+    }
+  };
+
+  const handleEditAkun = async (updatedAcc: AkunPengguna) => {
+    setAkuns(prev => prev.map(a => a.id === updatedAcc.id ? updatedAcc : a));
+    try {
+      await setDoc(doc(db, 'akun-pengguna', updatedAcc.id), updatedAcc);
+    } catch (err) {
+      console.error("Failed to update firestore:", err);
+    }
+  };
+
+  const handleDeleteAkun = async (id: string) => {
+    setAkuns(prev => prev.filter(a => a.id !== id));
+    try {
+      await deleteDoc(doc(db, 'akun-pengguna', id));
+    } catch (err) {
+      console.error("Failed to delete from firestore:", err);
+    }
+  };
 
   // Authentication states
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -111,14 +170,60 @@ export default function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      if (user) {
+        const mappedUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Google Super Admin',
+          photoURL: user.photoURL,
+          role: 'super_admin',
+          roleName: 'Super Admin',
+          allowedModules: ["Semua Modul", "Sekretariat", "Kepegawaian", "Keuangan", "Aset", "O&P Lapangan"],
+          canInput: true,
+          isFirebaseUser: true
+        };
+        setSessionUser(mappedUser);
+        localStorage.setItem('psda_session_user', JSON.stringify(mappedUser));
+      } else {
+        setSessionUser((prev: any) => {
+          if (prev?.isFirebaseUser) {
+            localStorage.removeItem('psda_session_user');
+            return null;
+          }
+          return prev;
+        });
+      }
       setAuthLoading(false);
     });
     return () => unsub();
   }, []);
 
+  // Sync Accounts database with Firestore in background when active session is present
+  useEffect(() => {
+    if (!sessionUser) return;
+
+    const unsubAkun = onSnapshot(collection(db, 'akun-pengguna'), (snapshot) => {
+      if (snapshot.empty) {
+        akuns.forEach(acc => {
+          setDoc(doc(db, 'akun-pengguna', acc.id), acc).catch(err => {
+            console.warn("Failed to seed account inside listener:", err);
+          });
+        });
+      } else {
+        const items: AkunPengguna[] = [];
+        snapshot.forEach(d => items.push(d.data() as AkunPengguna));
+        setAkuns(items);
+      }
+    }, (error) => {
+      console.warn("Firestore akun-pengguna listen failed (normal if rules restrict unauth):", error);
+    });
+
+    return () => unsubAkun();
+  }, [sessionUser]);
+
   // Sync with Firestore when logged in
   useEffect(() => {
-    if (!currentUser) return;
+    if (!sessionUser) return;
 
     // Sync Profil
     const unsubProfil = onSnapshot(doc(db, 'profil', 'kantor'), (snapshot) => {
@@ -252,6 +357,23 @@ export default function App() {
       handleFirestoreError(error, OperationType.GET, 'pembangunan');
     });
 
+    // Sync Sungai
+    const unsubSungai = onSnapshot(collection(db, 'sungai'), (snapshot) => {
+      if (snapshot.empty) {
+        initialSungai.forEach(s => {
+          setDoc(doc(db, 'sungai', s.id), s).catch(error => {
+            handleFirestoreError(error, OperationType.WRITE, `sungai/${s.id}`);
+          });
+        });
+      } else {
+        const items: Sungai[] = [];
+        snapshot.forEach(d => items.push(d.data() as Sungai));
+        setSungai(items);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'sungai');
+    });
+
     return () => {
       unsubProfil();
       unsubSM();
@@ -261,8 +383,9 @@ export default function App() {
       unsubAset();
       unsubDI();
       unsubPembangunan();
+      unsubSungai();
     };
-  }, [currentUser]);
+  }, [sessionUser]);
 
   // Synchronize Active Theme local state
   useEffect(() => {
@@ -271,7 +394,7 @@ export default function App() {
 
   const updateProfil = async (newProfil: ProfilKantor) => {
     setProfil(newProfil);
-    if (currentUser) {
+    if (sessionUser) {
       try {
         await setDoc(doc(db, 'profil', 'kantor'), newProfil);
       } catch (error) {
@@ -282,7 +405,7 @@ export default function App() {
 
   // Master Data Reset routine
   const resetToFactoryDefaults = async () => {
-    if (currentUser) {
+    if (sessionUser) {
       try {
         for (const item of suratMasuk) {
           await deleteDoc(doc(db, 'surat-masuk', item.id));
@@ -434,52 +557,173 @@ export default function App() {
     );
   }
 
-  if (!currentUser) {
+  if (!sessionUser) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white selection:bg-teal-500/20 relative overflow-hidden">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white selection:bg-blue-500/20 relative overflow-hidden">
         {/* Ambient glow backgrounds */}
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-3xl" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-3xl" />
         
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col gap-8 relative z-10">
+        <div className="w-full max-w-lg bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col gap-6 relative z-10 my-8">
+          
+          {/* Header Branding */}
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
-              <Droplets className="w-8 h-8 animate-pulse" />
+            <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/25">
+              <Droplets className="w-7 h-7 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white uppercase mt-2">UPTD PSDA Bah Bolon</h1>
-              <p className="text-[10px] text-blue-400 tracking-widest font-mono font-bold uppercase mt-1">SISTEM INTEGRASI TU-OP CLOUD</p>
+              <h1 className="text-lg font-black tracking-tight text-white uppercase mt-1 animate-pulse">UPTD PSDA Bah Bolon</h1>
+              <p className="text-[9px] text-blue-400 tracking-wider font-mono font-bold uppercase mt-0.5">SISTEM INTEGRASI HAK AKSES TU-OP CLOUD</p>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-6 flex flex-col gap-4 text-center">
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Selamat datang di Sistem Integrasi Data UPTD PSDA Bah Bolon berbasis Google Cloud Firestore. Silakan sambungkan akun Google terafiliasi Anda untuk menyinkronkan seluruh data secara real-time.
+          <div className="border-t border-slate-800/80 pt-5 space-y-4">
+            <p className="text-2xs text-slate-400 text-center leading-relaxed max-w-sm mx-auto">
+              Silakan masuk menggunakan akun kredensial hak akses sektoral Anda atau sambungkan via akun Google terafiliasi.
             </p>
-            
-            <button 
-              onClick={async () => {
-                try {
-                  await signInWithPopup(auth, googleProvider);
-                } catch (error) {
-                  console.error("Login failed: ", error);
+
+            {/* Error Message Alert */}
+            {loginError && (
+              <div className="bg-rose-950/40 border border-rose-800/50 text-rose-300 p-3 rounded-xl text-[11px] text-center font-bold">
+                ⚠️ {loginError}
+              </div>
+            )}
+
+            {/* Credentials Login Form */}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const found = akuns.find(a => a.username.toLowerCase() === loginUsername.trim().toLowerCase() && a.sandu === loginPassword.trim());
+                if (found) {
+                  const mapped = {
+                    uid: found.id,
+                    username: found.username,
+                    email: `${found.username}@sda.go.id`,
+                    displayName: found.roleName,
+                    photoURL: null,
+                    role: found.role,
+                    roleName: found.roleName,
+                    allowedModules: found.allowedModules,
+                    canInput: found.canInput,
+                    isCustomAdmin: true
+                  };
+                  setSessionUser(mapped);
+                  localStorage.setItem('psda_session_user', JSON.stringify(mapped));
+                  setLoginError('');
+                } else {
+                  setLoginError('Kombinasi Nama Pengguna atau Kata Sandi salah!');
                 }
               }}
-              className="mt-4 w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-extrabold px-6 py-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] shadow-lg shadow-white/5 text-xs uppercase border-none outline-none"
+              className="space-y-3 pt-1 text-xs"
             >
-              <LogIn className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Masuk dengan Google</span>
-            </button>
-            
-            <div className="flex items-center justify-center gap-1.5 text-[9px] text-slate-500 font-mono mt-2">
-              <Lock className="w-3 h-3" />
-              <span>DIAMANKAN OLEH FIREBASE AUTH & RULES</span>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ID Pengguna (Username)</label>
+                <input
+                  type="text"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  placeholder="contoh: super.admin"
+                  className="w-full p-3 bg-slate-950/65 border border-slate-800 hover:border-slate-75 focus:outline-none focus:border-blue-500 text-slate-100 rounded-xl font-bold font-sans transition-all text-xs outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1 relative">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kata Sandi (Password)</label>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Sandi Rahasia"
+                    className="w-full p-3 bg-slate-950/65 border border-slate-800 hover:border-slate-75 focus:outline-none focus:border-blue-500 text-slate-100 rounded-xl font-mono transition-all text-xs pr-10 outline-none"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white"
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold p-3.5 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-blue-500/15 text-xs text-center uppercase tracking-wider border-none outline-none mt-4 cursor-pointer"
+              >
+                Masuk Sistem
+              </button>
+            </form>
+
+            {/* Alternatif Login: Google Provider */}
+            <div className="pt-2 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="h-[1px] bg-slate-800/80 flex-1"></div>
+                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest font-mono">Pilihan Alternatif</span>
+                <div className="h-[1px] bg-slate-800/80 flex-1"></div>
+              </div>
+
+              <button 
+                onClick={async () => {
+                  try {
+                    await signInWithPopup(auth, googleProvider);
+                  } catch (error) {
+                    console.error("Login failed: ", error);
+                    setLoginError('Sambungan Google Auth Gagal: silakan periksa kredensial.');
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] border border-slate-700/60 text-xs"
+              >
+                <LogIn className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Masuk dengan Google (Super Admin)</span>
+              </button>
             </div>
           </div>
+
+          {/* Helper Quick Accounts Card for easy test review */}
+          <div className="bg-slate-950/55 border border-slate-800/60 p-4 rounded-2xl space-y-2.5">
+            <div className="flex items-center gap-1.5 text-[10px] text-blue-400 font-extrabold uppercase font-mono tracking-wider">
+              <Shield className="w-3.5 h-3.5 text-blue-400" />
+              <span>Daftar Akun & Peran Hak Akses (Uji Coba Cepat):</span>
+            </div>
+            
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Klik salah satu akun sektoral di bawah ini untuk mengisi kredensial secara instan:
+            </p>
+
+            <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+              {akuns.map((acc) => (
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => {
+                    setLoginUsername(acc.username);
+                    setLoginPassword(acc.sandu);
+                    setLoginError('');
+                  }}
+                  className="bg-slate-905 hover:bg-slate-850 border border-slate-800 text-slate-300 p-2 rounded-lg text-left transition-colors flex flex-col justify-between hover:border-slate-700 cursor-pointer"
+                >
+                  <span className="font-extrabold text-[9px] text-blue-400 leading-tight block">{acc.roleName}</span>
+                  <span className="font-mono text-[9px] text-slate-500 mt-1 block">User: <strong className="text-slate-300">{acc.username}</strong></span>
+                  <span className="font-mono text-[9px] text-slate-500 block">Sandi: <strong className="text-slate-300">{acc.sandu}</strong></span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 text-[8.5px] text-slate-500 font-mono">
+            <Lock className="w-3 h-3" />
+            <span>SISTEM DIINTEGRASIKAN VIA CLOUD FIRESTORE & HAK AKSES PERAN</span>
+          </div>
+
         </div>
 
-        <p className="text-[10px] text-slate-600 mt-12 font-mono">
-          Hak Cipta © 2026 Dinas Sumber Daya Air ProvSU
+        <p className="text-[10px] text-slate-600 font-mono text-center">
+          Hak Cipta © UPTD PSDA Bah Bolon Sumut
         </p>
       </div>
     );
@@ -558,9 +802,21 @@ export default function App() {
             { id: 'dashboard', label: 'E-Dashboard', icon: LayoutDashboard },
             { id: 'tata-usaha', label: 'Tata Usaha / Urusan TU', icon: Building2 },
             { id: 'seksi-op', label: 'Seksi O&P (Irigasi)', icon: Compass },
-            { id: 'seksi-pembangunan', label: 'Seksi Pembangunan', icon: TrendingUp },
-            { id: 'pengaturan', label: 'Pengaturan', icon: Settings }
-          ].map((menu) => {
+            { id: 'seksi-pembangunan', label: 'Seksi Pembangunan Infrastruktur SDA', icon: TrendingUp },
+            { id: 'pengaturan', label: 'Pengaturan & Profil', icon: Settings }
+          ].filter(menu => {
+            if (!sessionUser) return false;
+            if (sessionUser.role === 'super_admin') return true;
+            if (menu.id === 'dashboard') return true;
+            
+            if (sessionUser.role === 'admin_tu') return menu.id === 'tata-usaha';
+            if (sessionUser.role === 'admin_pegawai') return menu.id === 'tata-usaha';
+            if (sessionUser.role === 'admin_uang') return menu.id === 'tata-usaha';
+            if (sessionUser.role === 'admin_aset') return menu.id === 'tata-usaha';
+            
+            if (sessionUser.role === 'surveyor') return menu.id === 'seksi-op';
+            return false;
+          }).map((menu) => {
             const MenuIcon = menu.icon;
             const isSelected = currentPage === menu.id;
             return (
@@ -625,9 +881,21 @@ export default function App() {
                 { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard },
                 { id: 'tata-usaha', label: 'Tata Usaha / Umum', icon: Building2 },
                 { id: 'seksi-op', label: 'Operasi & Pemeliharaan', icon: Compass },
-                { id: 'seksi-pembangunan', label: 'Seksi Pembangunan', icon: TrendingUp },
+                { id: 'seksi-pembangunan', label: 'Seksi Pembangunan Infrastruktur SDA', icon: TrendingUp },
                 { id: 'pengaturan', label: 'Pengaturan & Profil', icon: Settings }
-              ].map((menu) => {
+              ].filter(menu => {
+                if (!sessionUser) return false;
+                if (sessionUser.role === 'super_admin') return true;
+                if (menu.id === 'dashboard') return true;
+                
+                if (sessionUser.role === 'admin_tu') return menu.id === 'tata-usaha';
+                if (sessionUser.role === 'admin_pegawai') return menu.id === 'tata-usaha';
+                if (sessionUser.role === 'admin_uang') return menu.id === 'tata-usaha';
+                if (sessionUser.role === 'admin_aset') return menu.id === 'tata-usaha';
+                
+                if (sessionUser.role === 'surveyor') return menu.id === 'seksi-op';
+                return false;
+              }).map((menu) => {
                 const isSelected = currentPage === menu.id;
                 return (
                   <button
@@ -670,25 +938,39 @@ export default function App() {
 
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2.5">
-              {currentUser?.photoURL ? (
+              {sessionUser?.photoURL ? (
                 <img 
-                  src={currentUser.photoURL} 
-                  alt={currentUser.displayName || ''} 
+                  src={sessionUser.photoURL} 
+                  alt={sessionUser.displayName || ''} 
                   className="w-7 h-7 rounded-full border border-gray-100 object-cover" 
                   referrerPolicy="no-referrer" 
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
-                  {currentUser?.displayName ? currentUser.displayName[0] : 'O'}
+                <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  {sessionUser?.displayName ? sessionUser.displayName[0] : 'O'}
                 </div>
               )}
               <div className="text-right hidden sm:block">
-                <p className="font-extrabold text-xs text-gray-700 leading-none">{currentUser?.displayName || 'Operator'}</p>
-                <p className="text-[9px] text-gray-400 font-medium leading-none mt-1">{currentUser?.email}</p>
+                <p className="font-extrabold text-xs text-gray-750 leading-none">{sessionUser?.displayName || 'Operator'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5 justify-end">
+                  <span className="text-[9px] bg-indigo-50 text-indigo-700 px-1 py-0.2 rounded font-bold">{sessionUser?.roleName || 'Sektoral'}</span>
+                  <span className="text-[8px] text-gray-400 font-mono leading-none">{sessionUser?.email}</span>
+                </div>
               </div>
             </div>
             <button 
-              onClick={() => signOut(auth)}
+              onClick={async () => {
+                try {
+                  await signOut(auth);
+                } catch (e) {
+                  // silent
+                }
+                localStorage.removeItem('psda_session_user');
+                setSessionUser(null);
+                setLoginUsername('');
+                setLoginPassword('');
+                setLoginError('');
+              }}
               className="text-[10px] bg-red-50 text-red-700 hover:bg-red-100 font-extrabold px-3 py-1.5 rounded-lg border border-red-200 transition-all cursor-pointer"
             >
               Keluar
@@ -830,6 +1112,17 @@ export default function App() {
               }}
               
               initialSubTab={tuSubTab}
+              canInput={sessionUser?.canInput !== false}
+              allowedSubTabs={(() => {
+                if (!sessionUser) return [];
+                if (sessionUser.role === 'super_admin') return ['persuratan', 'kepegawaian', 'keuangan', 'aset'];
+                const tabs: string[] = [];
+                if (sessionUser.role === 'admin_tu') tabs.push('persuratan');
+                if (sessionUser.role === 'admin_pegawai') tabs.push('kepegawaian');
+                if (sessionUser.role === 'admin_uang') tabs.push('keuangan');
+                if (sessionUser.role === 'admin_aset') tabs.push('aset');
+                return tabs;
+              })()}
             />
           )}
 
@@ -857,6 +1150,29 @@ export default function App() {
                   handleFirestoreError(e, OperationType.DELETE, `daerah-irigasi/${id}`);
                 }
               }}
+              sungai={sungai}
+              onAddSungai={async (item) => {
+                try {
+                  await setDoc(doc(db, 'sungai', item.id), item);
+                } catch (e) {
+                  handleFirestoreError(e, OperationType.WRITE, `sungai/${item.id}`);
+                }
+              }}
+              onEditSungai={async (item) => {
+                try {
+                  await setDoc(doc(db, 'sungai', item.id), item);
+                } catch (e) {
+                  handleFirestoreError(e, OperationType.WRITE, `sungai/${item.id}`);
+                }
+              }}
+              onDeleteSungai={async (id) => {
+                try {
+                  await deleteDoc(doc(db, 'sungai', id));
+                } catch (e) {
+                  handleFirestoreError(e, OperationType.DELETE, `sungai/${id}`);
+                }
+              }}
+              canInput={sessionUser?.canInput !== false}
             />
           )}
 
@@ -897,6 +1213,10 @@ export default function App() {
               onChangeTheme={setActiveTheme}
               onImportBackupData={importBackupJson}
               onExportBackupData={exportBackupJson}
+              akuns={akuns}
+              onAddAkun={handleAddAkun}
+              onEditAkun={handleEditAkun}
+              onDeleteAkun={handleDeleteAkun}
             />
           )}
 

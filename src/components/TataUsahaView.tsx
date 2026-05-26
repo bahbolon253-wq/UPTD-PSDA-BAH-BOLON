@@ -91,6 +91,8 @@ interface TataUsahaViewProps {
   onDeleteAset: (id: string) => void;
   
   initialSubTab?: string;
+  canInput?: boolean;
+  allowedSubTabs?: string[];
 }
 
 export default function TataUsahaView({
@@ -115,10 +117,17 @@ export default function TataUsahaView({
   onAddAset,
   onEditAset,
   onDeleteAset,
-  initialSubTab = 'persuratan'
+  initialSubTab = 'persuratan',
+  canInput = true,
+  allowedSubTabs
 }: TataUsahaViewProps) {
   
-  const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
+  const [activeSubTab, setActiveSubTab] = useState(() => {
+    if (allowedSubTabs && allowedSubTabs.length > 0) {
+      return allowedSubTabs[0];
+    }
+    return initialSubTab;
+  });
 
   // Common Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -460,12 +469,12 @@ export default function TataUsahaView({
             Seksi Tata Usaha & Urusan Kepegawaian
           </h1>
           <p className="text-xs text-gray-500">
-            Pusat pelayanan persuratan, buku kas keuangan, inventarisasi data kearsipan dan aset internal
+            Pusat pelayanan bagian umum, bendahara pengeluaran pembantu, inventarisasi data kearsipan dan aset internal
           </p>
         </div>
 
         {/* Buttons and actions */}
-        {activeSubTab !== 'persuratan' && activeSubTab !== 'kepegawaian' && (
+        {canInput && activeSubTab !== 'persuratan' && activeSubTab !== 'kepegawaian' && (
           <button
             onClick={handleOpenAddModal}
             className="flex items-center gap-1.5 bg-teal-600 text-white font-bold p-2 px-3.5 rounded-lg hover:bg-teal-700 hover:shadow shadow-sm transition-all text-xs"
@@ -478,11 +487,11 @@ export default function TataUsahaView({
       {/* Under-header subtab deck buttons */}
       <div className="flex flex-wrap gap-1 bg-gray-50 p-1 rounded-xl w-fit border border-gray-100 select-none">
         {[
-          { id: 'persuratan', label: 'Arsip Persuratan', icon: Inbox },
+          { id: 'persuratan', label: 'Bagian Umum', icon: Inbox },
           { id: 'kepegawaian', label: 'Kepegawaian', icon: Users },
-          { id: 'keuangan', label: 'Buku Kas Keuangan', icon: Wallet },
+          { id: 'keuangan', label: 'Bendahara Pengeluaran Pembantu', icon: Wallet },
           { id: 'aset', label: 'Aset & Inventaris', icon: HardDrive }
-        ].map((tab) => {
+        ].filter(tab => !allowedSubTabs || allowedSubTabs.includes(tab.id)).map((tab) => {
           const IconComp = tab.icon;
           return (
             <button
@@ -1720,7 +1729,7 @@ export default function TataUsahaView({
                       >
                         <option value="Tata Usaha">Unit Tata Usaha (KTU)</option>
                         <option value="Seksi O&P">Seksi Operasi & Pemeliharaan</option>
-                        <option value="Seksi Pembangunan">Seksi Pembangunan & Rehab</option>
+                        <option value="Seksi Pembangunan">Seksi Pembangunan Infrastruktur SDA</option>
                       </select>
                     </div>
 
